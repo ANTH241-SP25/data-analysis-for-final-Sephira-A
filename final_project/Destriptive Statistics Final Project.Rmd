@@ -1,0 +1,324 @@
+---
+title: "Coding for Final Project"
+output: html_document
+date: "2025-04-17"
+---
+```{r}
+library(questionr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(dunn.test)
+```
+
+Descriptive statistics. 
+Count tables for nominal variables Pregnancy Diabetes, High Blood Pressure, Race. This creates counts of each variable That I can use as a general description of my variables.
+```{r}
+count(Cesarean_FinalProject, Race)
+count(Cesarean_FinalProject, High_Blood_Pressure)
+count(Cesarean_FinalProject, Pregnancy_Diabetes)
+```
+Frequency table for ordinal variables BMIcat, and Agecat. This produces counts and percentages of the ordinal variables. 
+```{r}
+freq(Cesarean_FinalProject$BMIcat, cum=TRUE)
+freq(Cesarean_FinalProject$Agecat, cum=TRUE)
+```
+Descriptive statistics for continuous variable Cesarian deliveries and vaginal deliveries that gives me the mean, standard deviation, and count of each. 
+```{r}
+Cesarean_FinalProject%>% 
+  drop_na(Cesarean_Birth)%>%
+  summarize(mean(Cesarean_Birth), sd(Cesarean_Birth), count=n())
+
+Cesarean_FinalProject%>% 
+  drop_na(Vaginal_Birth)%>%
+  summarize(mean(Vaginal_Birth), sd(Vaginal_Birth), count=n())
+
+```
+
+Descriptive statistics of continuous variables by nominal or ordinal groups to find mean, standard deviation, and count on race with cesarean and vaginal births 
+```{r}
+Cesarean_FinalProject%>%
+  group_by(Race)%>%
+  drop_na(Cesarean_Birth)%>%
+  summarize(mean(Cesarean_Birth), sd(Cesarean_Birth), count=n())
+
+Cesarean_FinalProject%>%
+  group_by(Race)%>%
+  drop_na(Vaginal_Birth)%>%
+  summarize(mean(Vaginal_Birth), sd(Vaginal_Birth), count=n())
+```
+Descriptive statistics of continuous variables by nominal or ordinal groups to find mean, standard deviation, and count on high blood pressure with cesarean birth 
+```{r}
+Cesarean_FinalProject%>%
+  group_by(High_Blood_Pressure)%>%
+  drop_na(Cesarean_Birth)%>%
+  summarize(mean(Cesarean_Birth), sd(Cesarean_Birth), count=n())
+```
+Descriptive statistics of continuous variables by nominal or ordinal groups to find mean, standard deviation, and count on diabetes during pregnancy with cesarean birth 
+```{r}
+Cesarean_FinalProject%>%
+  group_by(Pregnancy_Diabetes)%>%
+  drop_na(Cesarean_Birth)%>%
+  summarize(mean(Cesarean_Birth), sd(Cesarean_Birth), count=n())
+```
+
+Descriptive statistics to find mean, standard deviation, and count from BMIcat in cesarean birth. 
+```{r}
+Cesarean_FinalProject%>%
+  group_by(BMIcat)%>%
+  drop_na(Cesarean_Birth)%>%
+  summarize(mean(Cesarean_Birth), sd(Cesarean_Birth), count=n())
+```
+Descriptive statistics to find mean, standard deviation, and count from agecat in cesarean birth. The caveat with age is that there might be a discrepancy with the age in which people took part in the NHANES data and when people actually had a cesarean/ vaginal birth. Potentially why there are so many 45+ people in this data set is because the age for the data set if way considered off. 
+```{r}
+Cesarean_FinalProject%>%
+  group_by(Agecat)%>%
+  drop_na(Cesarean_Birth)%>%
+  summarize(mean(Cesarean_Birth), sd(Cesarean_Birth), count=n())
+```
+```{r}
+#this is only for the t-test
+Cesarean_FinalProject_reduced <- Cesarean_FinalProject %>% 
+  filter(Pregnancy_Diabetes == "No" | Pregnancy_Diabetes == "Yes") %>% 
+  filter(High_Blood_Pressure == "No" | High_Blood_Pressure == "Yes")
+Cesarean_FinalProject_reduced
+```
+T-Test for Pregnancy diabetes and BMI and High blood pressure and BMI
+```{r}
+hist(Cesarean_FinalProject_reduced$BMI)
+Cesarean_FinalProject_reduced%>%
+  drop_na(BMI)%>%
+  group_by(Pregnancy_Diabetes)%>%
+  summarize(mean(BMI), sd(BMI), count=n())
+
+#var.test(Contvar~Catvar, data=, alternative="two.sided")
+var.test(BMI~Pregnancy_Diabetes, data=Cesarean_FinalProject_reduced, alternative="two.sided")
+t.test(BMI~Pregnancy_Diabetes, var.equal=FALSE, data=Cesarean_FinalProject_reduced)
+```
+There is a statistical difference with Pregnancy Diabetes and BMI with a p-value of 0.02124
+
+T-test with High blood pressure with BMI 
+```{r}
+hist(Cesarean_FinalProject_reduced$BMI)
+Cesarean_FinalProject_reduced%>%
+  drop_na(BMI)%>%
+  group_by(High_Blood_Pressure)%>%
+  summarize(mean(BMI), sd(BMI), count=n())
+
+#var.test(Contvar~Catvar, data=, alternative="two.sided")
+var.test(BMI~High_Blood_Pressure, data=Cesarean_FinalProject_reduced, alternative="two.sided")
+t.test(BMI~High_Blood_Pressure,var.equal=TRUE, data=Cesarean_FinalProject_reduced)
+```
+High blood pressure and BMI is statistically significant as the p-value is 1.728e-11. 
+
+Kruskal-Wallis Dunn test Continuous variable w/ three or more categorical variables)
+Cesarean Birth and race 
+```{r}
+
+#1. Generate summary statistics of cesarean birth and race?
+Cesarean_FinalProject%>%
+  drop_na(Cesarean_Birth)%>%
+  group_by(Race)%>%
+  summarize(mean(Cesarean_Birth), sd (Cesarean_Birth), count=n())
+  
+#2. Generate a boxplot of cesarean birth and race to visualize the summary statistics
+ggplot(Cesarean_FinalProject, aes(x=Race, y=Cesarean_Birth)) + geom_boxplot(fill= "darkgreen") + 
+  labs(x="Race", y="Cesarean Birth", title="Race/Cesarean Birth")
+#3. Run the Kruskal-Wallis test and the post-hoc Dunn test to see if there are any significant differences in cesarean birth race race. The code for the Kruskal-Wallis and Dunn test is: 
+#dunn.test(x=data$contvar, g=data$catvar, kw=TRUE)
+dunn.test(x=Cesarean_FinalProject$Cesarean_Birth, g=Cesarean_FinalProject$Race, kw=TRUE)
+
+```
+Cesarean birth and High blood pressure
+```{r}
+Cesarean_FinalProject%>%
+  drop_na(Cesarean_Birth)%>%
+  group_by(High_Blood_Pressure)%>%
+  summarize(mean(Cesarean_Birth), sd (Cesarean_Birth), count=n())
+  
+#2. Generate a boxplot of cesarean birth and race to visualize the summary statistics
+ggplot(Cesarean_FinalProject, aes(x=High_Blood_Pressure, y=Cesarean_Birth)) + geom_boxplot(fill= "lightblue") + 
+  labs(x="High Blood Pressure", y="Cesarean Birth", title="High Blood Pressure/Cesarean Birth")
+#3. Run the Kruskal-Wallis test and the post-hoc Dunn test to see if there are any significant differences in cesarean birth race race. The code for the Kruskal-Wallis and Dunn test is: 
+#dunn.test(x=data$contvar, g=data$catvar, kw=TRUE)
+dunn.test(x=Cesarean_FinalProject$Cesarean_Birth, g=Cesarean_FinalProject$High_Blood_Pressure, kw=TRUE)
+```
+
+Cesarean birth and pregnancy diabetes 
+```{r}
+Cesarean_FinalProject%>%
+  drop_na(Cesarean_Birth)%>%
+  group_by(Pregnancy_Diabetes)%>%
+  summarize(mean(Cesarean_Birth), sd (Cesarean_Birth), count=n())
+  
+#2. Generate a boxplot of cesarean birth and race to visualize the summary statistics
+ggplot(Cesarean_FinalProject, aes(x=Pregnancy_Diabetes, y=Cesarean_Birth)) + geom_boxplot(fill= "blue") + 
+  labs(x="Pregnancy Diabetes", y="Cesarean Birth", title="Pregnancy Diabetes/Cesarean Birth")
+#3. Run the Kruskal-Wallis test and the post-hoc Dunn test to see if there are any significant differences in cesarean birth race race. The code for the Kruskal-Wallis and Dunn test is: 
+#dunn.test(x=data$contvar, g=data$catvar, kw=TRUE)
+dunn.test(x=Cesarean_FinalProject$Cesarean_Birth, g=Cesarean_FinalProject$Pregnancy_Diabetes, kw=TRUE)
+```
+Chi Square 
+high blood pressure and race
+```{r}
+#a. Generate a two-way frequency table of pregnacy diabetes and :
+#table_name <- xtabs(~ CatVar1 + CatVar2, data=)
+#print the table
+#show the table in percentages: prop.table(table_name)*100
+HBP_Race_Table <- xtabs(~ High_Blood_Pressure + Race, data=Cesarean_FinalProject)
+HBP_Race_Table
+prop.table(HBP_Race_Table)*100
+#b. run the chi-square test:
+#chisq.test(table_name)
+chisq.test(HBP_Race_Table)
+```
+Pregnancy diabetes, BMIcat
+```{r}
+PB_BMIcat_Table <- xtabs(~ Pregnancy_Diabetes + BMIcat, data=Cesarean_FinalProject)
+PB_BMIcat_Table
+prop.table(PB_BMIcat_Table)*100
+chisq.test(PB_BMIcat_Table)
+```
+Correlation Statitics 
+```{r}
+#scatter plot code: #ggplot(aes(x=DepVar, y=IndVar), data=) + geom_point(color="") + geom_smooth(method=lm, color="") + labs(x="", y="") + theme_bw()
+Cesarean_FinalProject %>% 
+  ggplot(.,aes(Cesarean_Birth,Vaginal_Birth)) +
+  geom_point(color="lightblue") +
+  geom_smooth(method=lm, color="navy") +
+  theme_bw()
+#correlation test code: cor.test(data$DepVar, data$IndVar, method="pearson")
+cor.test(Cesarean_FinalProject$Cesarean_Birth,Cesarean_FinalProject$Vaginal_Birth)
+```
+Linear Regression models, Cesarean Birth and BMI & Vaginal Birth and BMI 
+```{r}
+#model_name <- lm(DepVar~IndVar, data=)
+#summary(model_name)
+Cesarean_BMI_Regression <- lm(BMI~Cesarean_Birth, data= Cesarean_FinalProject)
+summary(Cesarean_BMI_Regression)
+
+Vaginal_BMI_Regression <- lm(BMI~Vaginal_Birth, data= Cesarean_FinalProject)
+summary(Vaginal_BMI_Regression)
+```
+Create yes no for cesarean birth for odds ratio 
+```{r}
+Cesarean_FinalProject_reduced$Cesarean_BirthYN[Cesarean_FinalProject_reduced$Cesarean_Birth==1] <- "Yes"
+Cesarean_FinalProject_reduced$Cesarean_BirthYN[Cesarean_FinalProject_reduced$Cesarean_Birth==2] <- "Yes"
+Cesarean_FinalProject_reduced$Cesarean_BirthYN[Cesarean_FinalProject_reduced$Cesarean_Birth==3] <- "Yes"
+Cesarean_FinalProject_reduced$Cesarean_BirthYN[Cesarean_FinalProject_reduced$Cesarean_Birth==4] <- "Yes"
+Cesarean_FinalProject_reduced$Cesarean_BirthYN[Cesarean_FinalProject_reduced$Cesarean_Birth==5] <- "Yes"
+Cesarean_FinalProject_reduced$Cesarean_BirthYN[Cesarean_FinalProject_reduced$Cesarean_Birth==6] <- "Yes"
+Cesarean_FinalProject_reduced$Cesarean_BirthYN[Cesarean_FinalProject_reduced$Cesarean_Birth==7] <- "Yes"
+Cesarean_FinalProject_reduced$Cesarean_BirthYN[Cesarean_FinalProject_reduced$Cesarean_Birth==0] <- "No"
+factor(c(Cesarean_FinalProject_reduced$Cesarean_BirthYN, levels=c("No", "Yes")))
+head(Cesarean_FinalProject_reduced)
+```
+Create odds ratio with Cesarean births and race
+```{r}
+#1. Create the odds table:
+#odds_table_name <- table(data$IndVar, data$DepVar)
+Race_Cesarean_odds_table <- table(Cesarean_FinalProject_reduced$Race, Cesarean_FinalProject_reduced$Cesarean_BirthYN)
+#2. Run the oddsratio on the table you created:
+#oddsratio(odds_table_name)
+oddsratio(Race_Cesarean_odds_table)
+#3. Graph the results in a mosaic table:
+#ggplot(data=) + geom_mosaic(aes(x=product(IndVar), fill=DepVar), na.rm=TRUE, show.legend=FALSE) + labs(title="", x="", y="")
+ggplot(data=Cesarean_FinalProject_reduced)+ 
+  geom_mosaic(aes(x=product(Race), fill=Cesarean_BirthYN), 
+              na.rm=TRUE, show.legend=FALSE) +
+  labs (title= "Cesarean By Race", x="Race", y="Yes/No")
+```
+
+odds ratio with cesarean birth and age catagoriy 
+```{r}
+#odds_table_name <- table(data$IndVar, data$DepVar)
+Agecat_Cesarean_odds_table <- table(Cesarean_FinalProject_reduced$Agecat, Cesarean_FinalProject_reduced$Cesarean_BirthYN)
+#2. Run the oddsratio on the table you created:
+#oddsratio(odds_table_name)
+oddsratio(Agecat_Cesarean_odds_table)
+#3. Graph the results in a mosaic table:
+#ggplot(data=) + geom_mosaic(aes(x=product(IndVar), fill=DepVar), na.rm=TRUE, show.legend=FALSE) + labs(title="", x="", y="")
+ggplot(data=Cesarean_FinalProject_reduced)+ 
+  geom_mosaic(aes(x=product(Agecat), fill=Cesarean_BirthYN), 
+              na.rm=TRUE, show.legend=FALSE) +
+  labs (title= "Cesarean By Age cat", x="Race", y="Yes/No")
+```
+
+```{r}
+#1. Create the odds table:
+#odds_table_name <- table(data$IndVar, data$DepVar)
+HBP_Cesarean_odds_table <- table(Cesarean_FinalProject_reduced$BMIcat, Cesarean_FinalProject_reduced$Cesarean_BirthYN)
+#2. Run the oddsratio on the table you created:
+#oddsratio(odds_table_name)
+oddsratio(HBP_Cesarean_odds_table)
+#3. Graph the results in a mosaic table:
+#ggplot(data=) + geom_mosaic(aes(x=product(IndVar), fill=DepVar), na.rm=TRUE, show.legend=FALSE) + labs(title="", x="", y="")
+ggplot(data=Cesarean_FinalProject_reduced)+ 
+  geom_mosaic(aes(x=product(BMIcat), fill=Cesarean_BirthYN), 
+              na.rm=TRUE, show.legend=FALSE) +
+  labs (title= "Cesarean By BMIcat", x="BMIcat", y="Yes/No")
+```
+
+
+Yes NO for Vaginal birth for compairative odds ratio. 
+```{r}
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==1] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==2] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==3] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==4] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==5] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==6] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==7] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==8] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==9] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==10] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==11] <- "Yes"
+Cesarean_FinalProject_reduced$Vaginal_BirthYN[Cesarean_FinalProject_reduced$Vaginal_Birth==0] <- "No"
+factor(c(Cesarean_FinalProject_reduced$Vaginal_BirthYN, levels=c("No", "Yes")))
+head(Cesarean_FinalProject_reduced)
+```
+odds ratio for vaginal birth and race 
+```{r}
+#1. Create the odds table:
+#odds_table_name <- table(data$IndVar, data$DepVar)
+Race_Vaginal_odds_table <- table(Cesarean_FinalProject_reduced$Race, Cesarean_FinalProject_reduced$Vaginal_BirthYN)
+#2. Run the oddsratio on the table you created:
+#oddsratio(odds_table_name)
+oddsratio(Race_Vaginal_odds_table)
+#3. Graph the results in a mosaic table:
+#ggplot(data=) + geom_mosaic(aes(x=product(IndVar), fill=DepVar), na.rm=TRUE, show.legend=FALSE) + labs(title="", x="", y="")
+ggplot(data=Cesarean_FinalProject_reduced)+ 
+  geom_mosaic(aes(x=product(Race), fill=Vaginal_BirthYN), 
+              na.rm=TRUE, show.legend=FALSE) +
+  labs (title= "Vaginal By Race", x="Race", y="Yes/No")
+```
+Odds ratio for Vaginal birth and age catagories 
+```{r}
+#1. Create the odds table:
+#odds_table_name <- table(data$IndVar, data$DepVar)
+Race_Vaginal_odds_table <- table(Cesarean_FinalProject_reduced$Agecat, Cesarean_FinalProject_reduced$Vaginal_BirthYN)
+#2. Run the oddsratio on the table you created:
+#oddsratio(odds_table_name)
+oddsratio(Race_Vaginal_odds_table)
+#3. Graph the results in a mosaic table:
+#ggplot(data=) + geom_mosaic(aes(x=product(IndVar), fill=DepVar), na.rm=TRUE, show.legend=FALSE) + labs(title="", x="", y="")
+ggplot(data=Cesarean_FinalProject_reduced)+ 
+  geom_mosaic(aes(x=product(Agecat), fill=Vaginal_BirthYN), 
+              na.rm=TRUE, show.legend=FALSE) +
+  labs (title= "Vaginal By Agecat", x="Race", y="Yes/No")
+```
+
+Basic graphs for descriptive data. 
+```{r}
+ggplot(Cesarean_FinalProject, aes(x=Cesarean_Birth)) + geom_histogram(color="lightblue", fill= "steelblue") + 
+  labs(title="Cesarean Birth", x="Cesarean Birth", y="Count")
+```
+
+
+```{r}
+ggplot(Cesarean_FinalProject, aes(x=Vaginal_Birth)) + geom_histogram(color="lightblue", fill= "steelblue") + 
+  labs(title="Vaginal Birth", x="Vaginal Birth", y="Count")
+```
+
+
+
